@@ -52,6 +52,8 @@ app.use('/api/message',messageRouter)
 connectedDb()
 
 const PORT = 5000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`🚀 Server is running on http://localhost:${PORT}`);
 });
+
+export default server;
