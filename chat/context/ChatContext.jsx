@@ -1,12 +1,12 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import axios from "axios";
+
 import toast from "react-hot-toast";
 import { UseAppContext } from "./ProviderContext";
 
 const ChatContext = createContext();
 
 export const ChatProvider = ({ children }) => {
-  const { socket, authUser } = UseAppContext();
+  const { socket, authUser,axios } = UseAppContext();
 
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);

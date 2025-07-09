@@ -1,55 +1,68 @@
 import express from 'express';
 import cors from 'cors';
-import "dotenv/config";
+import dotenv from 'dotenv';
 import http from 'http';
 import { Server } from 'socket.io';
 import connectedDb from './config/db.js';
-
 import userRouter from './routes/userRoute.js';
 import messageRouter from './routes/MessageRoute.js';
-// import { Socket } from 'dgram'; // هذا السطر غير مستخدم غالباً، يمكن حذفه
+
+dotenv.config(); // ✅ تحميل متغيرات البيئة من .env
 
 const app = express();
 const server = http.createServer(app);
 
-app.use(express.json({ limit: "14mb" }));
+// ✅ إعداد CORS و Body Parser
 app.use(cors());
+app.use(express.json({ limit: '14mb' }));
 
-export const io = new Server(server, {
-  cors: {
-    origin: "*",
-  }
-});
-
+// ✅ Map لتتبع المستخدمين المتصلين
 export const userSocketMap = {};
 
-io.on("connection", (socket) => {
+// ✅ إنشاء socket.io
+export const io = new Server(server, {
+  cors: {
+    origin: "*", // أو ضع رابط الفرونت فقط لأمان أكثر
+  },
+});
+
+// ✅ أحداث socket
+io.on('connection', (socket) => {
   const userId = socket.handshake.query.userId;
-  console.log("user connected ", userId);
+  console.log("✅ User connected:", userId);
+
   if (userId) userSocketMap[userId] = socket.id;
+
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
+
   socket.on("disconnect", () => {
-    console.log("user disconnected", userId);
+    console.log("❌ User disconnected:", userId);
     delete userSocketMap[userId];
     io.emit("getOnlineUsers", Object.keys(userSocketMap));
   });
 });
 
-app.get('/', (req, res) => {
-  res.send('Socket.IO server is running with import');
-});
-
+// ✅ إعداد المسارات
 app.use('/api/auth', userRouter);
 app.use('/api/message', messageRouter);
 
-connectedDb();
+app.get('/', (req, res) => {
+  res.send("✅ Server and Socket.IO are running.");
+});
 
-// -------------------------------------------------------------
-// هذا الجزء هو الذي يجب حذفه أو تعليقه بالكامل:
-// const PORT = 5000;
-// server.listen(PORT, () => {
-//   console.log(`🚀 Server is running on http://localhost:${PORT}`);
-// });
-// -------------------------------------------------------------
+// ✅ تشغيل السيرفر بعد التأكد من الاتصال بـ MongoDB
+const startServer = async () => {
+  try {
+    await connectedDb(); // ⬅️ الاتصال بقاعدة البيانات
 
-export default server; // هذا السطر صحيح ويجب أن يظل موجوداً
+    const PORT = process.env.PORT || 5000;
+    server.listen(PORT, () => {
+      console.log(`🚀 Server running on http://localhost:${PORT}`);
+    });
+
+  } catch (error) {
+    console.error("❌ Failed to start server:", error.message);
+  }
+};
+
+startServer();
